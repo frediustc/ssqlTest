@@ -1,0 +1,359 @@
+// const fs = require('fs');
+// var ssql = fs.readFileSync('test.ssql', 'utf8');
+// console.log(ssql);
+
+
+
+
+
+
+
+
+
+// var script = '--++ fredius;';
+//
+// var delimiter = {
+//     insertInto : '-->',
+//     createTable: '--+',
+//     createDatabase: '--++',
+//     updateTable: '--^',
+//     selectFrom: '--*',
+//     drop: '---',
+//     deleteFrom: '--<',
+//     alter: '--/',
+//     use: '--|',
+//     declareVariable: '@',
+//     endQuery: ';',
+//     beginStatement: '[',
+//     endStatement: ']',
+//     beginDataType: '<',
+//     endDataType: '>',
+//     seperator: ',',
+//     referencer: '=>',
+//     stringDelimiter: '\'' || '"'
+// };
+// function tokenizer(input)
+// {
+//     var cursor = 0, tokens = [];
+//     while(input.length > cursor)
+//     {
+//         var token = input[cursor];
+//         var WHITESPACE = /\s/;
+//         if(WHITESPACE.test(token))
+//         {
+//             cursor++;
+//             continue;
+//         }
+//
+//         //take the begining of the statement
+//         // var START_QUERY = /(^[\-\-])([\-|\+|<|>|\||^|\/|])+$/;
+//         var START_QUERY = /([\-|\+|<|>|\||\^|\/])/;
+//         if(START_QUERY.test(token))
+//         {
+//             var value = '';
+//             while(START_QUERY.test(token))
+//             {
+//                 value += token;
+//                 token = input[++cursor];
+//             }
+//             tokens.push({
+//                 type: 'startQuery',
+//                 value: value
+//             });
+//             continue;
+//         }
+//
+//         //take strings
+//         var STRINGS = /[a-zA-Z_]/;
+//         if(STRINGS.test(token))
+//         {
+//             var value = '';
+//             while(STRINGS.test(token))
+//             {
+//                 value += token;
+//                 token = input[++cursor];
+//             }
+//             tokens.push({
+//                 type: 'strings',
+//                 value: value
+//             });
+//             continue;
+//         }
+//         var END_QUERY = /;/;
+//         if(END_QUERY.test(token))
+//         {
+//             tokens.push({
+//                 type: 'endQuery',
+//                 value: token
+//             });
+//             cursor++;
+//             continue;
+//         }
+//         throw new TypeError(token + ' is unknow');
+//     }
+//     return tokens;
+// }
+//
+// function parser(tokens)
+// {
+//     var cursor = 0;
+//
+//     function walk()
+//     {
+//         var token = tokens[cursor];
+//
+//         if(token.type === 'startQuery')
+//         {
+//             cursor++;
+//         }
+//     }
+// })
+
+
+
+
+
+
+
+
+
+
+
+// console.log(tokenizer(script));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function tokenizer(input)
+{
+    var cursor = 0, tokens = [];
+    while(input.length > cursor)
+    {
+        var token = input[cursor];
+        var WHITESPACE = /\s/;
+        if(WHITESPACE.test(token))
+        {
+            cursor++;
+            continue;
+        }
+        if(token === '(')
+        {
+            tokens.push({
+                type: 'paren',
+                value: token
+            });
+            cursor++;
+            continue;
+        }
+        if(token === ')')
+        {
+            tokens.push({
+                type: 'paren',
+                value: token
+            });
+            cursor++;
+            continue;
+        }
+        var NUMBERS = /[0-9]/;
+        if(NUMBERS.test(token))
+        {
+            var value = '';
+            while(NUMBERS.test(token))
+            {
+                value += token;
+                token = input[++cursor];
+            }
+            tokens.push({
+                type: 'number',
+                value: value
+            });
+            continue;
+        }
+        var LETTERS = /[a-zA-Z]/;
+        if(LETTERS.test(token))
+        {
+            var value = '';
+            while(LETTERS.test(token))
+            {
+                value += token;
+                token = input[++cursor];
+            }
+            tokens.push({
+                type: 'name',
+                value: value
+            });
+            continue;
+        }
+
+        throw new TypeError(token + ' is unknow');
+    }
+    return tokens;
+}
+
+function parser(tokens)
+{
+    var cursor = 0;
+
+    function walk()
+    {
+        var token = tokens[cursor];
+
+        if(token.type === 'number')
+        {
+            cursor++;
+            return {
+                type: 'NumberLiteral',
+                value: token.value
+            }
+        }
+        if(token.type === 'paren' && token.value === '(')
+        {
+            token = tokens[++cursor];
+
+            var node = {
+                type: 'CallExpression',
+                name: token.value,
+                params: []
+            };
+            token = tokens[++cursor];
+            while(token.type !== 'paren' || token.value !== ')')
+            {
+                node.params.push(walk());
+                token = tokens[cursor];
+            }
+            cursor++;
+            return node;
+        }
+        throw new TypeError(token.type + ' is unknow');
+    }
+    var ast = {
+        type: 'Program',
+        body: []
+    }
+    while (cursor < tokens.length) {
+        ast.body.push(walk());
+    }
+    return ast;
+}
+
+function traverser(ast, visitor)
+{
+    function traverseArray(array, parent)
+    {
+        array.forEach(function(child){
+            traverseNode(child, parent);
+        });
+    }
+    function traverseNode(node, parent)
+    {
+        var method = visitor[node.type];
+        if(method)
+        {
+            method(node, parent);
+        }
+        switch (node.type) {
+            case 'Program':
+                traverseArray(node.body, node);
+                break;
+            case 'CallExpression':
+                traverseArray(node.params, node);
+                break;
+            case 'NumberLiteral':
+                break;
+            default:
+                throw new TypeError(node.type + ' is undefined');
+        }
+    }
+    traverseNode(ast, null);
+}
+
+function transformer(ast)
+{
+    var newAst = {
+        type: 'Program',
+        body: []
+    };
+    ast._context = newAst.body;
+    traverser(ast, {
+        NumberLiteral: function(node, parent)
+        {
+            parent._context.push({
+                type: 'NumberLiteral',
+                value: node.value
+            });
+        },
+        CallExpression: function(node, parent)
+        {
+            var expression = {
+                type: 'CallExpression',
+                called: {
+                    type: 'Identifier',
+                    name: node.name
+                },
+                arguments: []
+            };
+            node._context = expression.arguments;
+            if(parent.type !== 'CallExpression')
+            {
+                expression = {
+                    type: 'ExpressionStatement',
+                    expression: expression
+                }
+            }
+
+            parent._context.push(expression);
+        }
+    });
+    return newAst;
+}
+
+function codeGenerator(node)
+{
+    switch(node.type)
+    {
+        case 'Program':
+            return node.body.map(codeGenerator).join('\n');
+        case 'ExpressionStatement':
+            return (codeGenerator(node.expression) + ';');
+        case 'CallExpression':
+            return (codeGenerator(node.called) + '(' + node.arguments.map(codeGenerator).join(', ') + ')');
+        case 'Identifier':
+            return node.name;
+        case 'NumberLiteral':
+            return (node.value);
+        default:
+            throw new TypeError(node.type + ' is unknow');
+    }
+}
+
+function compiler(input)
+{
+    var tokens = tokenizer(input);
+    var ast = parser(tokens);
+    var newAst = transformer(ast);
+    var output = codeGenerator(newAst);
+
+    return output;
+}
+var string = '(add 2 (subtract 4 2))';//add(2, subtract(4,2)) 2 + (4-2)
+console.log(compiler(string));

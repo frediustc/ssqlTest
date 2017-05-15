@@ -1,0 +1,30 @@
+body{
+    margin: 0;
+    padding: 0;
+}
+#parent
+{
+    background-color: blue;
+    margin:auto;
+    width: 500px;
+}
+.eli.active ~ label
+
+{
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+#parent:after
+{
+    content:"";
+    clear: both;
+    display: block;
+}
+#parent div
+{
+    width:100px;
+    height:100px;
+    background: red;
+    float:left;
+    margin:10px;
+}

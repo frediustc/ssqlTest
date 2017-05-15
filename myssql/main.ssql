@@ -1,0 +1,2 @@
+--++ dbname;
+--+ usertype (user_type_id int<11> primary key auto_increment, user_type_name varchar<60> not null);
